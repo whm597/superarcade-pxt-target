@@ -1,0 +1,65 @@
+{
+    "criteria": [
+        {
+            "id": "499F3572-E655-4DEE-953B-5F26BF0191D7",
+            "use": "ai_question",
+            "template": "Ask AI: ${question}",
+            "description": "Experimental: AI outputs may not be accurate. Use with caution and always review responses.",
+            "docPath": "/teachertool",
+            "maxCount": 10,
+            "tags": ["General"],
+            "requestFeedback": true,
+            "params": [
+                {
+                    "name": "question",
+                    "type": "longString",
+                    "maxCharacters": 1000,
+                    "paths": ["checks[0].question"],
+                    "options": [
+                        {
+                            "id": "reviewAndExplain",
+                            "category": "Examine",
+                            "value": "Review this MakeCode Arcade project and explain the different parts of the program."
+                        },
+                        {
+                            "id": "inspectForBugs",
+                            "category": "Examine",
+                            "value": "Inspect this MakeCode Arcade program for bugs. If any issues are found, describe the problems and give suggestions for how to fix them."
+                        },
+                        {
+                            "id": "describeGame",
+                            "category": "Examine",
+                            "value": "Describe what this MakeCode Arcade game is about, and how to play the game to a brand-new player."
+                        },
+                        {
+                            "id": "evaluateCodeQuality",
+                            "category": "Assess",
+                            "value": "Evaluate the quality of the code in this MakeCode Arcade program. List out demonstrated good programming practices, as well as areas for improvement."
+                        },
+                        {
+                            "id": "checkNaming",
+                            "category": "Assess",
+                            "value": "Does this program include meaningful variable or function names?"
+                        },
+                        {
+                            "id": "suggestCodeImprovements",
+                            "category": "Suggest",
+                            "value": "After examining this MakeCode Arcade project, suggest some improvements to the program for better code readability, efficiency, or reliability."
+                        },
+                        {
+                            "id": "suggestGameEnhancements",
+                            "category": "Suggest",
+                            "value": "After examining this MakeCode Arcade project, suggest some enhancements to the game to make it more engaging for players."
+                        }
+                    ]
+                },
+                {
+                    "name": "shareid",
+                    "type": "system",
+                    "key": "SHARE_ID",
+                    "paths": ["checks[0].shareId"]
+                }
+            ]
+        }
+    ]
+}

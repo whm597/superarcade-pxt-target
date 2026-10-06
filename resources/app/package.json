@@ -1,0 +1,52 @@
+{
+  "name": "superarcade-editor",
+  "version": "1.0.0",
+  "description": "SuperArcade - 由小明科技开发的复古街机游戏开发平台",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "start:dev": "ARCADE_DEV=1 electron .",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win"
+  },
+  "keywords": ["arcade", "game", "editor"],
+  "author": "小明科技",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^44.3.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.xiaoming.superarcade",
+    "productName": "SuperArcade",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "inject/**/*",
+      "editor/**/*",
+      "icon.png"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

@@ -1,0 +1,100 @@
+# Courses
+
+A collection of courses and tutorials built for Microsoft MakeCode Arcade. 
+
+## Classroom
+
+Structured courses for teaching computer science in the classroom.
+
+```codecard
+[
+    {
+        "name": "AP Computer Science Principles",
+        "description": "AP endorsed introductory class for High School students. The course is designed to attract students of all backgrounds, experience levels, and interests",
+        "cardType": "link",
+        "url": "https://makecode.com/csp",
+        "imageUrl": "/docs/static/courses/csp.png",
+        "largeImageUrl": "/docs/static/courses/csp.png",
+        "directOpen": true
+    },
+    {
+        "name": "Introduction to Computer Science with Microsoft MakeCode Arcade",
+        "description": "A full academic year course designed to be taught for introductory programming classes in High School",
+        "cardType": "link",
+        "url": "/courses/introcs",
+        "imageUrl": "/docs/static/courses/teals-introcs.jpg",
+        "largeImageUrl": "/docs/static/courses/teals-introcs.jpg",
+        "directOpen": true
+    },
+    {
+        "name": "Code a Carnival",
+        "description": "A modular and differentiated set of coding activities for students in grades 5-12",
+        "cardType": "link",
+        "url": "/courses/carnival",
+        "imageUrl": "/docs/static/hour-of-code/2022/booth.png",
+        "largeImageUrl": "/docs/static/hour-of-code/2022/booth.png",
+        "directOpen": true,
+        "label": "No Verification Required!",
+        "labelClass": "orange ribbon large"
+    }
+]
+```
+
+Interested in using AP Computer Science Principles or Introduction to Computer Science with Microsoft MakeCode Arcade? You'll need to create an Educator Verified GitHub account to download them.  Details on that process can be found here:
+
+[https://makecode.com/github-teacher-verification](https://makecode.com/github-teacher-verification)
+
+
+## TinkerGen GameGo-Game Programming Courses
+
+A collection of game programming tutorials to develop kids’ graphical programming skills with TinkerGen's GameGo.
+The games they make in the course can run on the GameGo device! Courses are free after log in.
+
+```codecard
+[
+    {
+        "name": "GameGo Beginner Programming Course",
+        "description": "TinkerGen's Arcade game course is a collection of wizard tutorials teaching kids the basics of game development. Games made in the course can run on the GameGo device! Course is free after log in.",
+        "url": "https://make2learn.tinkergen.com/course/?sku=604182001",
+        "imageUrl": "/docs/static/courses/gamego-beginner.png",
+        "largeImageUrl": "/docs/static/courses/gamego-beginner.png",
+        "cardType": "link",
+        "directOpen": true
+    }, {
+        "name": "GameGo Intermediate Programming Course",
+        "description": "TinkerGen's intermediate game development course covers more topics like animations and multiplayer. Games made in the course can run on the GameGo device! Course is free after log in.",
+        "url": "https://make2learn.tinkergen.com/course/?sku=604182003",
+        "imageUrl": "/docs/static/courses/gamego-intermediate.png",
+        "largeImageUrl": "/docs/static/courses/gamego-intermediate.png",
+        "cardType": "link",
+        "directOpen": true
+    }
+]
+```
+
+## Short Coding Lessons
+
+Short lessons to get you started coding games.
+
+```codecard
+[
+{
+  "name": "Cherry Pickr",
+  "description": "Learn the basics of creating a game",
+  "url": "/lessons/cherry-pickr",
+  "imageUrl": "/docs/static/lessons/cherry-pickr.png"
+},
+{
+  "name": "Dance Party",
+  "description": "Create a basic dance collision game using sprite overlap events and controller buttons!",
+  "url": "/lessons/dance-party",
+  "imageUrl": "/docs/static/lessons/dance-party.png"
+},
+{
+  "name": "BlockOut",
+  "description": "Create a projectile collision game",
+  "url": "/lessons/block-out",
+  "imageUrl": "/docs/static/lessons/block-out.png"
+}
+]
+```

@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en" data-framework="typescript">
+
+<head>
+    <meta charset="utf-8">
+    <title>Microsoft MakeCode Arcade Simulator</title>
+    <link rel="stylesheet" type="text/css" href="sim.css">
+    <link rel="stylesheet" type="text/css" href="icons.css">
+    <style>
+        body {
+            background: transparent;
+            overflow: hidden;
+        }
+        #wrap {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            overflow: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        #safari-enable-game {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .safari-enable-game-body {
+            background-color: white;
+            padding: 1.25rem;
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            z-index: 100;
+            flex-shrink: 1;
+        }
+        #safari-enable-game .title {
+            font-weight: 700;
+            font-size: 1.125rem;
+            line-height: 1.75rem;
+        }
+        #safari-enable-game div {
+            color: #000000;
+        }
+        #safari-enable-game button {
+            cursor: pointer;
+            position: relative;
+            display: inline-block;
+            min-height: 1rem;
+            outline: none;
+            border: none;
+            vertical-align: middle;
+            color: #ffffff;
+            background: #e77038;
+            margin: 0 0.25rem 0 0;
+            padding: 0.8rem 2rem 0.95rem;
+            font-weight: 400;
+            line-height: 1em;
+            font-size: 16px;
+            text-align: center;
+            border-radius: 0.2em;
+            user-select: none;
+        }
+    </style>
+    <script src="pxtsim.js"></script>
+    <script src="sim.js"></script>
+</head>
+
+<body id="root">
+    <div id="wrap">
+        <div class="game-player">
+            <div id="debug-stats"></div>
+            <div class="game-embed">
+                <canvas id="game-screen" class="hidden" tabindex="0" role="application"></canvas>
+            </div>
+            <div class="game-sys-button-group">
+                <button class="game-sys-button game-menu-button no-select">Menu</button>
+                <button class="game-sys-button game-reset-button no-select">
+                    <i></i>
+                </button>
+            </div>
+            <div id="game-buttons-container" class="game-buttons">
+                <svg xmlns="http://www.w3.org/2000/svg" class="game-button-svg" viewBox="0 0 40 40" width="200px" height="200px">
+                    <!-- Cross layout: Y(left), A(right), B(bottom), X(top) -->
+                    <circle class="button-y" cx="10" cy="20" r="6.5" fill="var(--sim-button-fill)" stroke="#e77038" stroke-width="2" />
+                    <text class="label-y no-select" x="10" y="20" text-anchor="middle" dy="2" font-size="7" fill="#e77038">Y</text>
+                    <circle class="button-a" cx="30" cy="20" r="6.5" fill="var(--sim-button-fill)" stroke="var(--sim-button-stroke)" stroke-width="2.5" />
+                    <text class="label-a no-select" x="30" y="20" text-anchor="middle" dy="2.5" font-size="7">A</text>
+                    <circle class="button-b" cx="20" cy="30" r="6.5" fill="var(--sim-button-fill)" stroke="var(--sim-button-stroke)" stroke-width="2.5" />
+                    <text class="label-b no-select" x="20" y="30" text-anchor="middle" dy="2.5" font-size="7">B</text>
+                    <circle class="button-x" cx="20" cy="10" r="6.5" fill="var(--sim-button-fill)" stroke="#e77038" stroke-width="2" />
+                    <text class="label-x no-select" x="20" y="10" text-anchor="middle" dy="2" font-size="7" fill="#e77038">X</text>
+                </svg>
+            </div>
+            <div id="joystick-container" class="game-joystick">
+                <svg xmlns="http://www.w3.org/2000/svg" class="game-joystick-svg" viewBox="1 0 40 40" width="200px" height="200px">
+                    <circle class="joystick-background" cx="20" cy="20" r="16" fill="var(--sim-dpad-fill)" stroke="var(--sim-button-stroke)" stroke-width="2" />
+                    <rect class="dpad-up" x="16" y="6" width="8" height="12" rx="2" fill="var(--sim-text-color)" stroke="none" stroke-width="1" />
+                    <rect class="dpad-down" x="16" y="22" width="8" height="12" rx="2" fill="var(--sim-text-color)" stroke="none" stroke-width="1" />
+                    <rect class="dpad-right" x="22" y="16" width="12" height="8" rx="2" fill="var(--sim-text-color)" stroke="none" stroke-width="1" />
+                    <rect class="dpad-left" x="6" y="16" width="12" height="8" rx="2" fill="var(--sim-text-color)" stroke="none" stroke-width="1" />
+                    <circle cx="20" cy="20" r="6" fill="var(--sim-text-color)" />
+                    <circle class="joystick-handle" cx="20" cy="20" r="6" fill="var(--sim-button-fill)" stroke="var(--sim-joystick-handle-stroke)" stroke-width="2" />
+                </svg>
+            </div>
+            <!-- SEL button removed (replaced by SVG circle below) -->
+            <div class="game-player-background"></div>
+            <div class="game-player-msft"></div>
+        </div>
+        <div id="safari-enable-game" style="display: none">
+            <div class="safari-enable-game-body">
+                <div class="title">Game Paused</div>
+                <div class="body">Click to start the game</div>
+                <button>Start Game</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    // Extended buttons X/Y/SEL - directly queue INTERNAL_KEY events (same as official A/B keys)
+    (function() {
+        // Match f412.ts button IDs
+        const BTN_X = 200;
+        const BTN_Y = 201;
+        const BTN_SEL = 202;
+        const INTERNAL_KEY_DOWN = 2051;
+        const INTERNAL_KEY_UP = 2050;
+
+        function triggerButton(btnId, pressed) {
+            try {
+                // Update UI visual state for ALL matching buttons (keyboard input feedback)
+                const selector = btnId === 200 ? '.button-x' : btnId === 201 ? '.button-y' : '.button-sel';
+                document.querySelectorAll(selector).forEach(function(btnEl) {
+                    btnEl.setAttribute('fill', pressed ? '#e77038' : '#2a2a3e');
+                });
+                // Trigger game event
+                if (typeof pxsim === 'undefined' || !pxsim.board) return false;
+                const board = pxsim.board();
+                if (!board || !board.bus || typeof board.bus.queue !== 'function') return false;
+                board.bus.queue(pressed ? INTERNAL_KEY_DOWN : INTERNAL_KEY_UP, btnId);
+                console.log('[SimButtons] btn', btnId, pressed ? 'DOWN' : 'UP');
+                return true;
+            } catch (e) {
+                console.log('[SimButtons] Error:', e.message);
+                return false;
+            }
+        }
+
+        function bindButton(el, btnId) {
+            if (!el || el._bound) return;
+            el._bound = true;
+            el.style.cursor = 'pointer';
+            let isPressed = false;
+            el.addEventListener('mousedown', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                isPressed = true;
+                el.setAttribute('fill', '#e77038');
+                triggerButton(btnId, true);
+            });
+            el.addEventListener('mouseup', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isPressed) {
+                    isPressed = false;
+                    el.setAttribute('fill', '#2a2a3e');
+                    triggerButton(btnId, false);
+                }
+            });
+            el.addEventListener('mouseleave', function() {
+                if (isPressed) {
+                    isPressed = false;
+                    el.setAttribute('fill', '#2a2a3e');
+                    triggerButton(btnId, false);
+                }
+            });
+            el.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                isPressed = true;
+                el.setAttribute('fill', '#e77038');
+                triggerButton(btnId, true);
+            });
+            el.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isPressed) {
+                    isPressed = false;
+                    el.setAttribute('fill', '#2a2a3e');
+                    triggerButton(btnId, false);
+                }
+            });
+        }
+
+        // Keyboard F/G/H -> custom buttons
+        document.addEventListener('keydown', function(e) {
+            if (e.keyCode === 70) triggerButton(BTN_X, true);   // F -> X
+            else if (e.keyCode === 71) triggerButton(BTN_Y, true);   // G -> Y
+            else if (e.keyCode === 72) triggerButton(BTN_SEL, true);  // H -> SEL
+        });
+        document.addEventListener('keyup', function(e) {
+            if (e.keyCode === 70) triggerButton(BTN_X, false);
+            else if (e.keyCode === 71) triggerButton(BTN_Y, false);
+            else if (e.keyCode === 72) triggerButton(BTN_SEL, false);
+        });
+
+        function ensureCrossLayout() {
+            const container = document.getElementById('game-buttons-container');
+            if (!container) return false;
+
+            const svg = container.querySelector('svg');
+            if (!svg) return false;
+
+            // Remove any old X/Y buttons in main SVG (they're now in independent container)
+            const oldX = svg.querySelector('.button-x');
+            if (oldX) oldX.remove();
+            const oldY = svg.querySelector('.button-y');
+            if (oldY) oldY.remove();
+            const oldLabelX = svg.querySelector('.label-x');
+            if (oldLabelX) oldLabelX.remove();
+            const oldLabelY = svg.querySelector('.label-y');
+            if (oldLabelY) oldLabelY.remove();
+
+            const btnA = svg.querySelector('.button-a');
+            const btnB = svg.querySelector('.button-b');
+
+            // If A/B exist but are in old positions, reposition everything
+            if (btnA && btnB) {
+                btnA.setAttribute('cx', '30');
+                btnA.setAttribute('cy', '20');
+                btnA.setAttribute('r', '6.5');
+                btnA.setAttribute('stroke-width', '2.5');
+
+                btnB.setAttribute('cx', '20');
+                btnB.setAttribute('cy', '30');
+                btnB.setAttribute('r', '6.5');
+                btnB.setAttribute('stroke-width', '2.5');
+
+                const labelA = svg.querySelector('.label-a');
+                if (labelA) {
+                    labelA.setAttribute('x', '30');
+                    labelA.setAttribute('y', '20');
+                    labelA.setAttribute('font-size', '7');
+                }
+                const labelB = svg.querySelector('.label-b');
+                if (labelB) {
+                    labelB.setAttribute('x', '20');
+                    labelB.setAttribute('y', '30');
+                    labelB.setAttribute('font-size', '7');
+                }
+            }
+
+            return true;
+        }
+
+        function ensureXYButtons() {
+            if (document.getElementById('xy-svg-container')) return true;
+            const mainContainer = document.getElementById('game-buttons-container');
+            if (!mainContainer) return false;
+            const mainSvg = mainContainer.querySelector('svg');
+            if (!mainSvg) return false;
+            const btnA = mainSvg.querySelector('.button-a');
+            if (!btnA) return false;
+
+            // Create independent overlay container (same approach as SEL button)
+            const container = document.createElement('div');
+            container.id = 'xy-svg-container';
+            container.style.cssText = 'position:absolute; top:0; left:0; width:100%; height:100%; z-index:9999; pointer-events:none;';
+
+            // Create SVG with same viewBox as main SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '100%');
+            svg.setAttribute('height', '100%');
+            svg.setAttribute('viewBox', mainSvg.getAttribute('viewBox') || '0 0 40 40');
+
+            // X button (top) - clone from A button
+            const circleX = btnA.cloneNode(true);
+            circleX.setAttribute('class', 'button-x');
+            circleX.setAttribute('cx', '20');
+            circleX.setAttribute('cy', '10');
+            circleX.setAttribute('r', '6.5');
+            circleX.setAttribute('stroke', '#e77038');
+            circleX.setAttribute('stroke-width', '2');
+            circleX.style.pointerEvents = 'all';
+            svg.appendChild(circleX);
+
+            const textX = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            textX.setAttribute('class', 'label-x no-select');
+            textX.setAttribute('x', '20');
+            textX.setAttribute('y', '10');
+            textX.setAttribute('text-anchor', 'middle');
+            textX.setAttribute('dy', '2');
+            textX.setAttribute('font-size', '7');
+            textX.setAttribute('fill', '#e77038');
+            textX.style.pointerEvents = 'none';
+            textX.textContent = 'X';
+            svg.appendChild(textX);
+
+            // Y button (left) - clone from A button
+            const circleY = btnA.cloneNode(true);
+            circleY.setAttribute('class', 'button-y');
+            circleY.setAttribute('cx', '10');
+            circleY.setAttribute('cy', '20');
+            circleY.setAttribute('r', '6.5');
+            circleY.setAttribute('stroke', '#e77038');
+            circleY.setAttribute('stroke-width', '2');
+            circleY.style.pointerEvents = 'all';
+            svg.appendChild(circleY);
+
+            const textY = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            textY.setAttribute('class', 'label-y no-select');
+            textY.setAttribute('x', '10');
+            textY.setAttribute('y', '20');
+            textY.setAttribute('text-anchor', 'middle');
+            textY.setAttribute('dy', '2');
+            textY.setAttribute('font-size', '7');
+            textY.setAttribute('fill', '#e77038');
+            textY.style.pointerEvents = 'none';
+            textY.textContent = 'Y';
+            svg.appendChild(textY);
+
+            container.appendChild(svg);
+            mainContainer.appendChild(container);
+
+            // Bind events
+            bindButton(circleX, 200); // BTN_X
+            bindButton(circleY, 201); // BTN_Y
+
+            return true;
+        }
+
+        function ensureSelButton() {
+            if (document.getElementById('sel-svg-container')) return true;
+            const player = document.querySelector('.game-player');
+            if (!player) return false;
+
+            // Create independent container for SEL button (positioned center-bottom)
+            const container = document.createElement('div');
+            container.id = 'sel-svg-container';
+            container.style.cssText = 'position:absolute; bottom:10px; left:50%; transform:translateX(-50%); z-index:9999; pointer-events:auto;';
+
+            // Create SVG with SEL circle - clone from A button for identical behavior
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '60');
+            svg.setAttribute('height', '30');
+            svg.setAttribute('viewBox', '0 0 60 30');
+
+            // Clone A button from main SVG if available, otherwise create new
+            const mainSvg = document.querySelector('#game-buttons-container svg');
+            const btnA = mainSvg ? mainSvg.querySelector('.button-a') : null;
+            let circle;
+            if (btnA) {
+                circle = btnA.cloneNode(true);
+                circle.setAttribute('class', 'button-sel');
+                circle.setAttribute('cx', '30');
+                circle.setAttribute('cy', '15');
+                circle.setAttribute('r', '12');
+                circle.setAttribute('stroke', '#e77038');
+                circle.setAttribute('stroke-width', '2.5');
+            } else {
+                circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('class', 'button-sel');
+                circle.setAttribute('cx', '30');
+                circle.setAttribute('cy', '15');
+                circle.setAttribute('r', '12');
+                circle.setAttribute('fill', '#2a2a3e');
+                circle.setAttribute('stroke', '#e77038');
+                circle.setAttribute('stroke-width', '2.5');
+            }
+            svg.appendChild(circle);
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('class', 'label-sel no-select');
+            text.setAttribute('x', '30');
+            text.setAttribute('y', '15');
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('dy', '3');
+            text.setAttribute('font-size', '10');
+            text.setAttribute('font-weight', 'bold');
+            text.setAttribute('fill', '#e77038');
+            text.style.pointerEvents = 'none';
+            text.textContent = 'SEL';
+            svg.appendChild(text);
+
+            container.appendChild(svg);
+            player.appendChild(container);
+
+            // Bind event using the same bindButton function
+            bindButton(circle, 202); // BTN_SEL
+
+            return true;
+        }
+
+        function init() {
+            ensureCrossLayout();
+            ensureXYButtons();
+            ensureSelButton();
+            // Hide original oval menu/sel button (we have our own round SEL button)
+            try {
+                const svg = document.querySelector('#game-buttons-container svg');
+                if (svg) {
+                    const menuBtn = svg.querySelector('.button-menu, [class*="menu"]');
+                    if (menuBtn) menuBtn.style.display = 'none';
+                    const menuLabel = svg.querySelector('.label-menu, [class*="menu"]');
+                    if (menuLabel) menuLabel.style.display = 'none';
+                    const ellipses = svg.querySelectorAll('ellipse');
+                    ellipses.forEach(e => e.style.display = 'none');
+                }
+            } catch (e) {}
+            console.log('[Simulator] Extended buttons X/Y/SEL enabled (custom Button objects, IDs 200/201/202)');
+            // Debug: check board state
+            try {
+                if (typeof pxsim !== 'undefined' && pxsim.board) {
+                    const b = pxsim.board();
+                    console.log('[Simulator] board() =', b ? 'exists' : 'null');
+                    if (b) {
+                        console.log('[Simulator] board.bus =', b.bus ? 'exists' : 'null');
+                        console.log('[Simulator] board keys:', Object.keys(b).slice(0, 20).join(','));
+                    }
+                } else {
+                    console.log('[Simulator] pxsim or pxsim.board not found');
+                }
+            } catch (e) {
+                console.log('[Simulator] init debug error:', e.message);
+            }
+        }
+
+        // Use setInterval instead of MutationObserver to avoid infinite loops
+        setInterval(function() {
+            ensureCrossLayout();
+            ensureXYButtons();
+            ensureSelButton();
+        }, 1000);
+
+        // Try immediately and after delays
+        init();
+        setTimeout(init, 500);
+        setTimeout(init, 1500);
+    })();
+    </script>
+</body>
+
+</html>
