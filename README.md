@@ -20,6 +20,7 @@ SuperArcade 掌机运行定制版 MakeCode Arcade 编辑器（Electron 桌面版
 | `target.js.md5` | target.js 的 MD5 校验值（`58ca5172af9bd72a14e3bcd3da5fc21f`），用于核对版本是否分叉 |
 | `extracted-sources/RAFFS.cpp` | 从 target.js 提取出的 RAFFS 存档实现（C++ 独立源码，v11.3 修复版，MD5 `944c03f9e7d879ca06ffe6ad6a99b896`），便于直接阅读/改代码 |
 | `delta-save-hwspi-48k-v113.zip` | **最新增量包**。内含 `resources/app/editor/target.js`，是覆盖编辑器时的标准交付物（与仓库内 target.js 逐字节一致） |
+| `tmx-import/` | **Tiled 瓦片地图导入功能（v8.5 验收闭环）**：注入模块源码 + 版本链备份 + 测试 + 增量包 + README（详见该目录 README.md） |
 
 ## 覆盖编辑器（恢复注入）
 
