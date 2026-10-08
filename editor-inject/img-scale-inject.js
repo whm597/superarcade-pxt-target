@@ -1,4 +1,4 @@
-/* img-scale-inject.js —— v8.8：导入图片 / 导入动画 增加像素缩放选择
+/* img-scale-inject.js —— v8.8→v8.11：导入图片 / 导入动画 缩放选择（统一像素 / 按百分比双模式，v8.11 图片多选）
  * 覆盖方案（不动前 1294 行基线）：
  *   1) 克隆替换「导入图片」(#arcade-import-btn) 与「导入动画」(#arcade-import-anim-btn) 按钮，
  *      新监听：选文件 → 弹缩放对话框（原尺寸 + 目标宽度输入 + 等比快捷按钮）→
@@ -86,20 +86,32 @@
         return { width: width, height: height, data: buf };
     }
 
-    /* ===== 缩放对话框（原尺寸 + 目标像素输入 + 等比/固定尺寸双模式） ===== */
-    function showScaleDialog(srcW, srcH) {
+    /* ===== 缩放对话框（v8.11：统一像素 / 按百分比 双模式 + 多文件计数）
+     * 模式语义：
+     *   px（统一像素）：所有图片/帧缩放到同一目标宽高（可自由指定、可保持宽高比）
+     *   pct（按百分比）：每张图片/每帧按各自原尺寸 × 百分比 分别缩放
+     * 等比快捷按钮 → 切 pct 模式（本质是百分比快捷）；精灵尺寸快捷 → px 模式（固定像素）。
+     * 返回 { mode:'px', dstW, dstH } 或 { mode:'pct', percent, dstW(预览), dstH(预览) } */
+    function showScaleDialog(srcW, srcH, multiCount) {
         return new Promise(resolve => {
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999999;display:flex;align-items:center;justify-content:center;';
             const box = document.createElement('div');
-            box.style.cssText = 'background:#2d2d2d;color:#fff;padding:20px 24px;border-radius:8px;max-width:480px;font-family:sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.4);';
+            box.style.cssText = 'background:#2d2d2d;color:#fff;padding:20px 24px;border-radius:8px;max-width:500px;font-family:sans-serif;box-shadow:0 4px 20px rgba(0,0,0,.4);';
             const def = srcW;
+            const info = multiCount > 1
+                ? ('共 <b style="color:#fff;">' + multiCount + '</b> 张，以第 1 张为例 原尺寸：<b style="color:#fff;">' + srcW + 'px × ' + srcH + 'px</b>')
+                : ('原尺寸：<b style="color:#fff;">' + srcW + 'px × ' + srcH + 'px</b>');
             box.innerHTML =
-                '<div style="font-size:15px;font-weight:bold;margin-bottom:10px;">选择目标尺寸</div>' +
-                '<div style="font-size:13px;color:#bbb;margin-bottom:12px;line-height:1.6;">' +
-                '原尺寸：<b style="color:#fff;">' + srcW + 'px × ' + srcH + 'px</b>' +
-                '<br>输入目标像素（面积平均重采样，保留像素风与细线）。勾选「保持宽高比」时改一边自动换算另一边；' +
-                '取消勾选可自由指定宽高（如把精灵图直接缩到 16×16 / 32×32）。</div>' +
+                '<div style="font-size:15px;font-weight:bold;margin-bottom:10px;">选择缩放方式</div>' +
+                '<div style="font-size:13px;color:#bbb;margin-bottom:12px;line-height:1.6;">' + info +
+                '<br>· <b style="color:#fff;">统一像素</b>：全部图片/帧缩放到同一宽高（可保持宽高比或自由指定）' +
+                '<br>· <b style="color:#fff;">按百分比</b>：每张/每帧按各自原尺寸缩放（适合尺寸不一的动画帧/图片组）。</div>' +
+                '<div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap;">' +
+                '<span style="font-size:13px;color:#bbb;">缩放方式:</span>' +
+                '<label style="font-size:13px;color:#eee;display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="imgscale-mode" value="px" checked style="width:14px;height:14px;">统一像素</label>' +
+                '<label style="font-size:13px;color:#eee;display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="radio" name="imgscale-mode" value="pct" style="width:14px;height:14px;">按百分比</label></div>' +
+                '<div id="imgscale-pxrow">' +
                 '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">' +
                 '<label style="font-size:14px;">目标宽度</label>' +
                 '<input id="imgscale-w-input" type="number" value="' + def + '" min="1" max="4096" step="1" style="width:88px;padding:6px 8px;background:#1d1d1d;color:#fff;border:1px solid #555;border-radius:4px;font-size:14px;text-align:center;">' +
@@ -109,12 +121,15 @@
                 '<input id="imgscale-h-input" type="number" value="' + srcH + '" min="1" max="4096" step="1" style="width:88px;padding:6px 8px;background:#1d1d1d;color:#fff;border:1px solid #555;border-radius:4px;font-size:14px;text-align:center;">' +
                 '<span style="font-size:13px;color:#bbb;">px</span></div>' +
                 '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
-                '<label style="font-size:14px;">百分比</label>' +
-                '<input id="imgscale-percent" type="number" value="100" min="1" max="800" step="1" style="width:88px;padding:6px 8px;background:#1d1d1d;color:#fff;border:1px solid #555;border-radius:4px;font-size:14px;text-align:center;">' +
-                '<span style="font-size:13px;color:#bbb;">%（1~800，按原尺寸等比缩放；取消勾选保持宽高比时不可用）</span></div>' +
-                '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
                 '<input id="imgscale-ratio" type="checkbox" checked style="width:16px;height:16px;">' +
                 '<label for="imgscale-ratio" style="font-size:13px;color:#bbb;">保持宽高比（改一边自动换算另一边）</label></div>' +
+                '</div>' +
+                '<div id="imgscale-pctrow" style="opacity:0.4;">' +
+                '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">' +
+                '<label style="font-size:14px;">百分比</label>' +
+                '<input id="imgscale-percent" type="number" value="100" min="1" max="800" step="1" disabled style="width:88px;padding:6px 8px;background:#1d1d1d;color:#fff;border:1px solid #555;border-radius:4px;font-size:14px;text-align:center;">' +
+                '<span style="font-size:13px;color:#bbb;">%（1~800，每张/每帧按各自原尺寸缩放）</span></div>' +
+                '</div>' +
                 '<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;flex-wrap:wrap;">' +
                 '<span style="font-size:12px;color:#bbb;">等比:</span>' +
                 [1, 0.5, 0.25, 0.125].map(r =>
@@ -135,74 +150,84 @@
             const hInput = box.querySelector('#imgscale-h-input');
             const ratioCb = box.querySelector('#imgscale-ratio');
             const percentInput = box.querySelector('#imgscale-percent');
+            const modePx = box.querySelector('input[name="imgscale-mode"][value="px"]');
+            const modePct = box.querySelector('input[name="imgscale-mode"][value="pct"]');
+            const pxRow = box.querySelector('#imgscale-pxrow');
+            const pctRow = box.querySelector('#imgscale-pctrow');
             const errBox = document.createElement('div');
             errBox.style.cssText = 'color:#ff6b6b;font-size:12px;margin:-4px 0 10px;display:none;';
             box.insertBefore(errBox, box.children[box.children.length - 2]);
             const showErr = m => { errBox.textContent = m; errBox.style.display = m ? 'block' : 'none'; };
             const ratioW = srcW / srcH; // 宽/高
-            // 百分比框：等比模式下由当前宽高同步；非等比（自由指定/精灵快捷）时禁用
-            const syncPercent = () => {
-                percentInput.disabled = !ratioCb.checked;
-                percentInput.style.opacity = ratioCb.checked ? '1' : '0.4';
-                if (ratioCb.checked) {
-                    const w = parseInt(wInput.value, 10) || 0;
-                    if (w > 0) percentInput.value = Math.round(w / srcW * 100);
-                }
+            // 模式切换：px = 宽高可用/百分比禁用；pct = 百分比可用/宽高禁用
+            const syncMode = () => {
+                const isPct = modePct.checked;
+                pxRow.style.opacity = isPct ? '0.4' : '1';
+                pctRow.style.opacity = isPct ? '1' : '0.4';
+                wInput.disabled = isPct; hInput.disabled = isPct;
+                percentInput.disabled = !isPct;
+                ratioCb.disabled = isPct;
+                showErr('');
             };
-            syncPercent();
-            // 百分比输入：1~800 任意值 → 等比换算宽高
+            modePx.addEventListener('change', syncMode);
+            modePct.addEventListener('change', syncMode);
+            // 百分比输入：1~800 任意值 → 等比换算宽高（px 预览值，pct 模式确定时用）
             percentInput.addEventListener('input', () => {
-                if (!ratioCb.checked) return;
+                if (!modePct.checked) return;
                 const p = parseFloat(percentInput.value);
                 if (isNaN(p)) { showErr('请输入有效百分比（1~800）'); return; }
                 if (p < 1 || p > 800) { showErr('百分比需在 1~800 之间'); return; }
                 showErr('');
-                ratioCb.checked = true;
                 wInput.value = Math.max(1, Math.round(srcW * p / 100));
                 hInput.value = Math.max(1, Math.round(srcH * p / 100));
             });
-            ratioCb.addEventListener('change', syncPercent);
-            // 等比联动：改宽 → 高 = 宽/ratioW；改高 → 宽 = 高*ratioW；并同步百分比
+            // 等比联动（仅 px 模式）：改宽 → 高 = 宽/ratioW；改高 → 宽 = 高*ratioW
             wInput.addEventListener('input', () => {
                 if (!ratioCb.checked) return;
                 const v = parseInt(wInput.value, 10);
                 if (v > 0) hInput.value = Math.max(1, Math.round(v / ratioW));
-                syncPercent();
             });
             hInput.addEventListener('input', () => {
                 if (!ratioCb.checked) return;
                 const v = parseInt(hInput.value, 10);
                 if (v > 0) wInput.value = Math.max(1, Math.round(v * ratioW));
-                syncPercent();
             });
+            // 等比快捷 → 切 pct 模式并填入百分比（本质是百分比快捷）
             box.querySelectorAll('button[data-ratio]').forEach(b => {
                 b.onclick = () => {
                     const r = parseFloat(b.getAttribute('data-ratio'));
-                    const v = Math.max(1, Math.round(srcW * r));
-                    wInput.value = v;
-                    hInput.value = Math.max(1, Math.round(srcH * r));
+                    modePct.checked = true;
                     percentInput.value = Math.round(r * 100);
-                    ratioCb.checked = true;
-                    syncPercent();
+                    wInput.value = Math.max(1, Math.round(srcW * r));
+                    hInput.value = Math.max(1, Math.round(srcH * r));
+                    syncMode();
                     showErr('');
                 };
             });
+            // 精灵尺寸快捷 → px 模式固定像素（解锁等比，自由指定）
             box.querySelectorAll('button[data-px]').forEach(b => {
                 b.onclick = () => {
                     const v = parseInt(b.getAttribute('data-px'), 10);
-                    ratioCb.checked = false; // 固定像素：解锁等比，宽高各自指定
+                    modePx.checked = true;
+                    ratioCb.checked = false;
                     wInput.value = v; hInput.value = v;
-                    syncPercent(); // 百分比禁用
+                    syncMode();
                     showErr('');
                 };
             });
             const done = v => { document.body.removeChild(overlay); resolve(v); };
             box.querySelector('#imgscale-cancel').onclick = () => done(null);
             box.querySelector('#imgscale-ok').onclick = () => {
+                if (modePct.checked) {
+                    const p = parseFloat(percentInput.value);
+                    if (isNaN(p) || p < 1 || p > 800) { showErr('请输入有效百分比（1~800）'); return; }
+                    done({ mode: 'pct', percent: p, dstW: parseInt(wInput.value, 10) || srcW, dstH: parseInt(hInput.value, 10) || srcH });
+                    return;
+                }
                 const w = parseInt(wInput.value, 10), h = parseInt(hInput.value, 10);
                 if (!w || w <= 0 || !h || h <= 0) { showErr('请输入有效的像素宽高'); return; }
                 if (w > 4096 || h > 4096) { showErr('尺寸过大（上限 4096px）'); return; }
-                done({ dstW: w, dstH: h, percent: ratioCb.checked ? (parseFloat(percentInput.value) || 100) : null });
+                done({ mode: 'px', dstW: w, dstH: h, percent: null });
             };
         });
     }
@@ -230,6 +255,16 @@
 
     function am() { return (window.__tmxImport && window.__tmxImport.findAssetManager) ? window.__tmxImport.findAssetManager() : null; }
 
+    /* ===== 目标尺寸计算（v8.11 单一来源）：
+     * mode='pct' → 每张/每帧按各自原尺寸 × percent/100 分别缩放
+     * mode='px'  → 全部统一到 dstW×dstH */
+    function calcDst(mode, srcW, srcH, opts) {
+        if (mode === 'pct') {
+            return [Math.max(1, Math.round(srcW * opts.percent / 100)), Math.max(1, Math.round(srcH * opts.percent / 100))];
+        }
+        return [opts.dstW, opts.dstH];
+    }
+
     function writeImage(pal, bmpData, name) {
         const assetManager = am();
         if (!assetManager || typeof assetManager.createNewProjectImage !== 'function') return false;
@@ -252,20 +287,33 @@
         return true;
     }
 
-    async function handleImageFile(file) {
+    async function handleImageFiles(files) {
         try {
-            const { w, h, data, name } = await readImageData(file);
-            const opts = await showScaleDialog(w, h);
+            const list = Array.prototype.slice.call(files || []);
+            if (!list.length) return;
+            const first = await readImageData(list[0]);
+            const opts = await showScaleDialog(first.w, first.h, list.length);
             if (!opts) return; // 取消
-            const rgba = (opts.dstW === w && opts.dstH === h) ? data : boxScale(data, w, h, opts.dstW, opts.dstH);
             const pal = getPalette();
-            const bmpData = pngToBitmap(pal, rgba, opts.dstW, opts.dstH);
-            if (!writeImage(pal, bmpData, name)) {
-                // 兜底：提示用户（资产写入失败，旧逻辑走 img literal，但保持提示即可）
-                await showMsg('导入图片', '图片已转换 ' + opts.dstW + 'x' + opts.dstH + 'px，但资产写入失败（未找到资产管理器）。');
-                return;
+            const isPct = opts.mode === 'pct';
+            const imported = [];
+            for (const f of list) {
+                const img = await readImageData(f);
+                const dims = calcDst(opts.mode, img.w, img.h, opts);
+                const dw = dims[0], dh = dims[1];
+                const rgba = (dw === img.w && dh === img.h) ? img.data : boxScale(img.data, img.w, img.h, dw, dh);
+                const bmpData = pngToBitmap(pal, rgba, dw, dh);
+                if (!writeImage(pal, bmpData, img.name)) {
+                    await showMsg('导入图片', '图片已转换，但资产写入失败（未找到资产管理器）。');
+                    return;
+                }
+                imported.push(img.name + ' ' + dw + 'x' + dh);
             }
-            await showMsg('导入图片', '图片已导入资产：' + name + '（' + opts.dstW + 'x' + opts.dstH + 'px，原 ' + w + 'x' + h + 'px）\n请切换到「资源」标签查看。');
+            const LIST_MAX = 60;
+            const listText = imported.length > LIST_MAX
+                ? imported.slice(0, LIST_MAX).join('\n') + '\n…（其余 ' + (imported.length - LIST_MAX) + ' 张略，可滚动查看）'
+                : imported.join('\n');
+            await showMsg('导入图片', '已导入 ' + imported.length + ' 张图片：\n' + listText + '\n请切换到「资源」标签查看。');
         } catch (e) {
             await showMsg('导入图片', '导入失败：' + (e && e.message || e));
         }
@@ -276,25 +324,34 @@
             if (files.length < 2) { await showMsg('导入动画', '请选择至少 2 张图片作为动画帧'); return; }
             const sorted = Array.from(files).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
             const first = await readImageData(sorted[0]);
-            const opts = await showScaleDialog(first.w, first.h);
+            const opts = await showScaleDialog(first.w, first.h, sorted.length);
             if (!opts) return; // 取消
             const intervalStr = await showPrompt('请输入帧间隔（毫秒），默认 200ms：', '200');
             if (intervalStr === null) return;
             const interval = parseInt(intervalStr) || 200;
             await showMsg('导入动画', '正在导入 ' + sorted.length + ' 帧动画...');
             const pal = getPalette();
+            const isPct = opts.mode === 'pct';
             const frames = [];
+            const sizes = [];
             for (const f of sorted) {
                 const img = await readImageData(f);
-                const rgba = (opts.dstW === img.w && opts.dstH === img.h) ? img.data : boxScale(img.data, img.w, img.h, opts.dstW, opts.dstH);
-                frames.push(pngToBitmap(pal, rgba, opts.dstW, opts.dstH));
+                const dims = calcDst(opts.mode, img.w, img.h, opts);
+                const dw = dims[0], dh = dims[1];
+                const rgba = (dw === img.w && dh === img.h) ? img.data : boxScale(img.data, img.w, img.h, dw, dh);
+                frames.push(pngToBitmap(pal, rgba, dw, dh));
+                sizes.push(dw + 'x' + dh);
             }
             const baseName = sorted[0].name.replace(/\.[^/.]+$/, '').replace(/[_\-]?\d+$/, '');
             if (!writeAnimation(frames, interval, baseName + '_anim')) {
-                await showMsg('导入动画', '动画已转换（' + frames.length + ' 帧 ' + opts.dstW + 'x' + opts.dstH + 'px），但资产写入失败（未找到资产管理器）。');
+                await showMsg('导入动画', '动画已转换（' + frames.length + ' 帧' + (isPct ? '，按各自原尺寸缩放' : ' ' + opts.dstW + 'x' + opts.dstH + 'px') + '），但资产写入失败（未找到资产管理器）。');
                 return;
             }
-            await showMsg('导入动画', '动画已导入！共 ' + frames.length + ' 帧，间隔 ' + interval + 'ms，尺寸 ' + opts.dstW + 'x' + opts.dstH + 'px。\n请在「资源」标签查看。');
+            const LIST_MAX = 60;
+            const sizeText = sizes.length > LIST_MAX ? sizes.slice(0, LIST_MAX).join(', ') + ', …（其余 ' + (sizes.length - LIST_MAX) + ' 帧略）' : sizes.join(', ');
+            await showMsg('导入动画', '动画已导入！共 ' + frames.length + ' 帧，间隔 ' + interval + 'ms' +
+                (isPct ? '，按百分比分别缩放：' + sizeText : '，尺寸 ' + opts.dstW + 'x' + opts.dstH + 'px') +
+                '\n请在「资源」标签查看。');
         } catch (e) {
             await showMsg('导入动画', '导入失败：' + (e && e.message || e));
         }
@@ -306,10 +363,11 @@
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:999999;display:flex;align-items:center;justify-content:center;';
             const dialog = document.createElement('div');
-            dialog.style.cssText = 'background:white;padding:24px;border-radius:8px;max-width:480px;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-family:sans-serif;';
-            dialog.innerHTML = '<div style="margin-bottom:12px;font-size:16px;font-weight:600;">' + title + '</div>' +
-                '<div style="font-size:14px;color:#333;white-space:pre-wrap;margin-bottom:16px;">' + body + '</div>' +
-                '<div style="text-align:right;"><button id="imgscale-msg-ok" style="padding:8px 20px;background:#2185d0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;">确定</button></div>';
+            // v8.12：flex 纵向布局 + 正文区可滚动，保证「确定」按钮始终可见（图片/动画批量导入清单过长时不再被顶出视口）
+            dialog.style.cssText = 'background:white;padding:20px 24px;border-radius:8px;max-width:480px;width:90vw;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-family:sans-serif;display:flex;flex-direction:column;max-height:80vh;';
+            dialog.innerHTML = '<div style="margin-bottom:12px;font-size:16px;font-weight:600;flex-shrink:0;">' + title + '</div>' +
+                '<div style="font-size:14px;color:#333;white-space:pre-wrap;margin-bottom:12px;overflow-y:auto;flex:1 1 auto;min-height:0;word-break:break-all;">' + body + '</div>' +
+                '<div style="text-align:right;flex-shrink:0;padding-top:10px;border-top:1px solid #eee;"><button id="imgscale-msg-ok" style="padding:8px 20px;background:#2185d0;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:14px;">确定</button></div>';
             overlay.appendChild(dialog);
             document.body.appendChild(overlay);
             dialog.querySelector('#imgscale-msg-ok').onclick = () => { document.body.removeChild(overlay); resolve(); };
@@ -368,7 +426,7 @@
         log('install 开始: readyState=' + document.readyState + ' body=' + !!document.body);
         let imgDone = false, animDone = false;
         const tryReplace = () => {
-            if (replaceButton('arcade-import-btn', files => handleImageFile(files[0]), false)) imgDone = true;
+            if (replaceButton('arcade-import-btn', files => handleImageFiles(files), true)) imgDone = true;
             if (replaceButton('arcade-import-anim-btn', files => handleAnimationFiles(files), true)) animDone = true;
             if (imgDone && animDone) log('按钮覆盖完成 图片: true 动画: true');
             return imgDone && animDone;
@@ -394,11 +452,8 @@
             if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
             e.preventDefault();
             e.stopImmediatePropagation();
-            const files = Array.from(e.dataTransfer.files);
-            if (files.some(f => f.type && f.type.startsWith('image/'))) {
-                if (files.length >= 2 && files.every(f => f.type && f.type.startsWith('image/'))) handleAnimationFiles(files);
-                else handleImageFile(files[0]);
-            }
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type && f.type.startsWith('image/'));
+            if (files.length) handleImageFiles(files); // 拖拽多张 → 图片多选导入（动画请用「导入动画」按钮）
         }, true);
         document.addEventListener('dragover', e => { e.preventDefault(); }, true);
         log('图片/动画缩放导入已启用（按钮覆盖 + 拖拽拦截）');
@@ -411,7 +466,8 @@
     window.__imgScale = {
         boxScale: boxScale, pngToBitmap: pngToBitmap, getPalette: getPalette,
         findClosestColor: findClosestColor, showScaleDialog: showScaleDialog,
-        handleImageFile: handleImageFile, handleAnimationFiles: handleAnimationFiles,
+        handleImageFiles: handleImageFiles, handleAnimationFiles: handleAnimationFiles,
+        calcDst: calcDst, showMsg: showMsg,
         replaceButton: replaceButton, install: install
     };
 })();

@@ -96,7 +96,7 @@ console.log('== 2. pngToBitmap（Arcade 调色板索引） ==');
     check('白色 → 索引 1', (bmp2.data[0] & 0xf) === 1, 'cell=' + bmp2.data[0]);
 }
 
-// ===== 3. showScaleDialog 交互 =====
+// ===== 3. showScaleDialog 交互（v8.11：统一像素 / 按百分比 双模式） =====
 console.log('== 3. 缩放对话框 ==');
 (async () => {
     const p1 = is.showScaleDialog(320, 240);
@@ -104,57 +104,71 @@ console.log('== 3. 缩放对话框 ==');
     const wInput = win.document.querySelector('#imgscale-w-input');
     const hInput = win.document.querySelector('#imgscale-h-input');
     const ratioCb = win.document.querySelector('#imgscale-ratio');
+    const pctInput = win.document.querySelector('#imgscale-percent');
+    const modePx = win.document.querySelector('input[name="imgscale-mode"][value="px"]');
+    const modePct = win.document.querySelector('input[name="imgscale-mode"][value="pct"]');
+    const errOf = () => win.document.querySelector('div[style*="color: rgb(255, 107, 107)"]');
     check('默认宽/高 = 原尺寸 320/240', wInput.value === '320' && hInput.value === '240');
     check('等比默认勾选', ratioCb.checked === true);
-    // 百分比输入框：默认 100，与等比勾选绑定
-    const pctInput = win.document.querySelector('#imgscale-percent');
-    check('百分比默认 100', pctInput.value === '100', 'v=' + pctInput.value);
-    check('百分比初始可用（等比勾选）', pctInput.disabled === false);
-    // 输入 50% → 320×240 等比 → 160×120
-    pctInput.value = '50';
-    pctInput.dispatchEvent(new win.Event('input', { bubbles: true }));
-    check('百分比 50% → 160×120', wInput.value === '160' && hInput.value === '120', wInput.value + 'x' + hInput.value);
-    // 输入 800% → 2560×1920
-    pctInput.value = '800';
-    pctInput.dispatchEvent(new win.Event('input', { bubbles: true }));
-    check('百分比 800% → 2560×1920', wInput.value === '2560' && hInput.value === '1920', wInput.value + 'x' + hInput.value);
-    // 非法百分比（0 / 900 / 非数字）→ 红字提示且不修改
-    pctInput.value = '900';
-    pctInput.dispatchEvent(new win.Event('input', { bubbles: true }));
-    const errPct1 = win.document.querySelector('#imgscale-w-input').parentElement.parentElement.querySelector('div[style*="color: rgb(255, 107, 107)"]');
-    check('百分比 900 红字提示', !!(errPct1 && errPct1.textContent), errPct1 && errPct1.textContent);
-    check('非法百分比不改宽高（保持 2560）', wInput.value === '2560', 'w=' + wInput.value);
-    pctInput.value = '50';
-    pctInput.dispatchEvent(new win.Event('input', { bubbles: true }));
-    // 点 50% 快捷 → 160×120（等比）
+    check('默认 px 模式', modePx.checked === true && modePct.checked === false);
+    check('px 模式：宽高可用', wInput.disabled === false && hInput.disabled === false);
+    check('px 模式：百分比禁用', pctInput.disabled === true, 'disabled=' + pctInput.disabled);
+
+    // 等比快捷 → 自动切 pct 模式（本质是百分比快捷）
     const btn50 = Array.from(win.document.querySelectorAll('button[data-ratio]')).find(b => b.getAttribute('data-ratio') === '0.5');
     btn50.click();
-    check('点 50% → 160×120', wInput.value === '160' && hInput.value === '120');
-    check('点 50% 同步百分比=50', pctInput.value === '50', 'pct=' + pctInput.value);
-    // 等比联动：改宽 200 → 高自动 150（jsdom 需手动触发 input 事件）+ 百分比同步 63
-    wInput.value = '200';
-    wInput.dispatchEvent(new win.Event('input', { bubbles: true }));
-    check('等比联动改宽 200 → 高 150', hInput.value === '150', 'h=' + hInput.value);
-    check('改宽 200 同步百分比=63', pctInput.value === '63', 'pct=' + pctInput.value);
+    check('点 50% 快捷 → 切 pct 模式', modePct.checked === true, 'px=' + modePx.checked + ' pct=' + modePct.checked);
+    check('点 50% → 百分比=50', pctInput.value === '50', 'pct=' + pctInput.value);
+    check('pct 模式：百分比可用', pctInput.disabled === false);
+    check('pct 模式：宽高禁用', wInput.disabled === true && hInput.disabled === true);
+
+    // pct 模式输入 800% → 预览宽高 2560×1920
+    pctInput.value = '800';
+    pctInput.dispatchEvent(new win.Event('input', { bubbles: true }));
+    check('pct 800% → 预览 2560×1920', wInput.value === '2560' && hInput.value === '1920', wInput.value + 'x' + hInput.value);
+
+    // 非法百分比（900）→ 红字且不改预览
+    pctInput.value = '900';
+    pctInput.dispatchEvent(new win.Event('input', { bubbles: true }));
+    check('pct 900 红字提示', !!(errOf() && errOf().textContent), errOf() && errOf().textContent);
+    check('非法百分比不改预览（保持 2560）', wInput.value === '2560', 'w=' + wInput.value);
+    pctInput.value = '50';
+    pctInput.dispatchEvent(new win.Event('input', { bubbles: true }));
+
+    // pct 确定 → {mode:'pct', percent}
     win.document.querySelector('#imgscale-ok').click();
     const v1 = await p1;
-    check('确定返回 {200, 150}', v1 && v1.dstW === 200 && v1.dstH === 150, JSON.stringify(v1));
+    check('pct 确定返回 {mode:pct, percent:50}', v1 && v1.mode === 'pct' && v1.percent === 50, JSON.stringify(v1));
 
-    // 固定像素：取消等比 → 自由指定 16×16
+    // px 模式：等比联动改宽 200 → 高自动 150
     const p3 = is.showScaleDialog(320, 240);
     await new Promise(r => setTimeout(r, 30));
     const w3 = win.document.querySelector('#imgscale-w-input');
     const h3 = win.document.querySelector('#imgscale-h-input');
-    const cb3 = win.document.querySelector('#imgscale-ratio');
     const pct3 = win.document.querySelector('#imgscale-percent');
-    cb3.click(); // 取消等比
-    check('取消等比 → 百分比禁用', pct3.disabled === true, 'disabled=' + pct3.disabled);
-    w3.value = '16'; h3.value = '16';
+    w3.value = '200';
+    w3.dispatchEvent(new win.Event('input', { bubbles: true }));
+    check('px 等比联动改宽 200 → 高 150', h3.value === '150', 'h=' + h3.value);
+    check('px 模式确定前百分比仍禁用', pct3.disabled === true);
     win.document.querySelector('#imgscale-ok').click();
     const v3 = await p3;
-    check('取消等比 → 自由指定 {16,16}', v3 && v3.dstW === 16 && v3.dstH === 16, JSON.stringify(v3));
+    check('px 确定返回 {mode:px, 200, 150}', v3 && v3.mode === 'px' && v3.dstW === 200 && v3.dstH === 150, JSON.stringify(v3));
 
-    // 精灵尺寸快捷按钮 32×32：点击后等比自动解锁，宽=高=32
+    // px 取消等比 → 自由指定 16×16（精灵场景）
+    const p5 = is.showScaleDialog(320, 240);
+    await new Promise(r => setTimeout(r, 30));
+    const w5 = win.document.querySelector('#imgscale-w-input');
+    const h5 = win.document.querySelector('#imgscale-h-input');
+    const cb5 = win.document.querySelector('#imgscale-ratio');
+    const pct5 = win.document.querySelector('#imgscale-percent');
+    cb5.click(); // 取消等比
+    check('px 取消等比后 百分比仍禁用', pct5.disabled === true, 'disabled=' + pct5.disabled);
+    w5.value = '16'; h5.value = '16';
+    win.document.querySelector('#imgscale-ok').click();
+    const v5 = await p5;
+    check('px 取消等比 → 自由指定 {16,16}', v5 && v5.mode === 'px' && v5.dstW === 16 && v5.dstH === 16, JSON.stringify(v5));
+
+    // 精灵尺寸快捷 32×32 → px 模式固定像素
     const p4 = is.showScaleDialog(48, 32);
     await new Promise(r => setTimeout(r, 30));
     const btn32 = Array.from(win.document.querySelectorAll('button[data-px]')).find(b => b.getAttribute('data-px') === '32');
@@ -163,26 +177,37 @@ console.log('== 3. 缩放对话框 ==');
     const h4 = win.document.querySelector('#imgscale-h-input');
     const cb4 = win.document.querySelector('#imgscale-ratio');
     const pct4 = win.document.querySelector('#imgscale-percent');
+    const modePx4 = win.document.querySelector('input[name="imgscale-mode"][value="px"]');
+    const modePct4 = win.document.querySelector('input[name="imgscale-mode"][value="pct"]');
+    check('精灵快捷 → 切回 px 模式', modePx4.checked === true && modePct4.checked === false);
     check('精灵快捷 32×32：宽=高=32', w4.value === '32' && h4.value === '32');
     check('精灵快捷自动解锁等比', cb4.checked === false);
     check('精灵快捷 → 百分比禁用', pct4.disabled === true, 'disabled=' + pct4.disabled);
     win.document.querySelector('#imgscale-ok').click();
     const v4 = await p4;
-    check('精灵快捷确定返回 {32,32}', v4 && v4.dstW === 32 && v4.dstH === 32, JSON.stringify(v4));
+    check('精灵快捷确定返回 {mode:px, 32, 32}', v4 && v4.mode === 'px' && v4.dstW === 32 && v4.dstH === 32, JSON.stringify(v4));
 
-    // 非法输入
+    // 多文件计数显示
+    const pMulti = is.showScaleDialog(320, 240, 3);
+    await new Promise(r => setTimeout(r, 30));
+    const infoDiv = win.document.querySelector('#imgscale-pxrow').previousElementSibling.previousElementSibling;
+    check('多文件对话框显示共 3 张', !!infoDiv && infoDiv.textContent.indexOf('3') >= 0, infoDiv && infoDiv.textContent);
+    win.document.querySelector('#imgscale-cancel').click();
+    const vMulti = await pMulti;
+    check('多文件取消返回 null', vMulti === null, String(vMulti));
+
+    // 非法输入（px 模式）
     const p2 = is.showScaleDialog(100, 100);
     await new Promise(r => setTimeout(r, 30));
     const input2 = win.document.querySelector('#imgscale-w-input');
     input2.value = '-5';
     win.document.querySelector('#imgscale-ok').click();
     await new Promise(r => setTimeout(r, 30));
-    const errBox = win.document.querySelector('#imgscale-w-input').parentElement.parentElement.querySelector('div[style*="color: rgb(255, 107, 107)"]');
-    check('非法输入红字提示', !!(errBox && errBox.textContent), errBox && errBox.textContent);
+    check('px 非法输入红字提示', !!(errOf() && errOf().textContent), errOf() && errOf().textContent);
     input2.value = '100';
     win.document.querySelector('#imgscale-ok').click();
     const v2 = await p2;
-    check('修正后确定 {100,100}', v2 && v2.dstW === 100 && v2.dstH === 100, JSON.stringify(v2));
+    check('px 修正后确定 {mode:px, 100, 100}', v2 && v2.mode === 'px' && v2.dstW === 100 && v2.dstH === 100, JSON.stringify(v2));
 })();
 
 // ===== 4. replaceButton 克隆替换（旧监听消失） =====
@@ -258,6 +283,44 @@ console.log('== 4. 按钮克隆替换 ==');
         return !!asset;
     })();
     check('createNewAnimationFromData 可写', okAnim && createdAnims.length === 1 && createdAnims[0].frames.length === 2 && createdAnims[0].interval === 200);
+
+    // ===== 6. calcDst 双模式尺寸计算（v8.11 核心：pct 每张分别 / px 统一） =====
+    console.log('== 6. calcDst 双模式尺寸计算 ==');
+    const d1 = is.calcDst('pct', 40, 40, { mode: 'pct', percent: 40 });
+    check('pct 40%：40×40 → 16×16', d1[0] === 16 && d1[1] === 16, d1.join('x'));
+    const d2 = is.calcDst('pct', 40, 80, { mode: 'pct', percent: 40 });
+    check('pct 40%：40×80 → 16×32（不同高度各自缩放）', d2[0] === 16 && d2[1] === 32, d2.join('x'));
+    const d3 = is.calcDst('pct', 100, 50, { mode: 'pct', percent: 150 });
+    check('pct 150%：100×50 → 150×75', d3[0] === 150 && d3[1] === 75, d3.join('x'));
+    const d4 = is.calcDst('px', 320, 240, { mode: 'px', dstW: 16, dstH: 16 });
+    check('px：320×240 统一 → 16×16', d4[0] === 16 && d4[1] === 16);
+    const d5 = is.calcDst('px', 40, 80, { mode: 'px', dstW: 16, dstH: 16 });
+    check('px：40×80 也统一 → 16×16（不按各自比例）', d5[0] === 16 && d5[1] === 16);
+    const d6 = is.calcDst('pct', 20, 20, { mode: 'pct', percent: 1 });
+    check('pct 1%：20×20 → 1×1（≥1 保护）', d6[0] === 1 && d6[1] === 1, d6.join('x'));
+    const d7 = is.calcDst('pct', 40, 40, { mode: 'pct', percent: 37.5 });
+    check('pct 37.5%：40×40 → 15×15（支持小数百分比）', d7[0] === 15 && d7[1] === 15, d7.join('x'));
+
+    // ===== 7. showMsg 滚动布局（v8.12：长清单不遮挡确定按钮） =====
+    console.log('== 7. showMsg 滚动布局 ==');
+    (async () => {
+        const longBody = '已导入 120 张图片：\n' + Array.from({ length: 120 }, (_, i) => 'monster_' + i + ' 16x24').join('\n') + '\n请切换到「资源」标签查看。';
+        const pMsg = is.showMsg('导入图片', longBody);
+        await new Promise(r => setTimeout(r, 30));
+        const btn = win.document.querySelector('#imgscale-msg-ok');
+        const btnRow = btn.parentElement;
+        const bodyDiv = btnRow.previousElementSibling;
+        const dlg = btnRow.parentElement;
+        check('对话框 flex 纵向布局', dlg.style.display === 'flex' && dlg.style.flexDirection === 'column',
+            dlg.style.display + ' / ' + dlg.style.flexDirection);
+        check('对话框 max-height 80vh', dlg.style.maxHeight === '80vh', dlg.style.maxHeight);
+        check('正文区可滚动 overflow-y:auto', bodyDiv.style.overflowY === 'auto', bodyDiv.style.overflowY);
+        check('正文区 flex:1（压缩时按钮仍可见）', bodyDiv.style.flex === '1 1 auto' || bodyDiv.style.flexGrow === '1', bodyDiv.style.flex);
+        btn.click();
+        const r = await pMsg;
+        check('点击确定关闭提示', r === undefined && !win.document.querySelector('#imgscale-msg-ok'));
+    })();
+
     // 等 4b 的异步断言（2600ms）跑完再退出
     setTimeout(() => {
         console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
