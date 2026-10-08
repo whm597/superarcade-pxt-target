@@ -51,3 +51,29 @@ SuperArcade 掌机运行定制版 MakeCode Arcade 编辑器（Electron 桌面版
 ## 固件基准（实测正常）
 
 云编译固件特征：`pc=0x0803e545, exec ver=0x00004210, bytecode ptr=0x0804f400, bytecode[0]=0x923b8e70`，存读档正常。异常固件特征：`pc=0x08038a7d, ver=0x08010801`（垃圾/残缺数据，勿刷）。
+
+---
+
+## 2026-10-08 更新：Tiled 瓦片地图导入 + 图片/动画缩放 + 顶部导入菜单（v8.6 → v8.10）
+
+### 新增内容（`editor-inject/` 目录）
+
+1. **TMX/TSX 瓦片地图导入**（`tmx-import-core.js` + `tmx-import-inject.js`）：
+   - `.tmx/.tsx + PNG → Arcade 资产`，支持 16px/32px/原尺寸缩放（面积平均 box 滤波保留像素风细线）
+   - 瓦片 ID 与 Tiled 原文件精确对齐（tsx 左→右/上→下编号 ↔ Arcade 资产索引）
+   - gid 翻转位烘焙（H/V/D 组合）、多 tileset 按 PNG 文件名自动匹配、gid>255 Uint16 安全
+   - 背景空洞填充（单层无背景图层 → 覆盖>50% 判背景填平均色）、透明像素填天蓝（普适）
+   - **碰撞导入（可选，默认勾选）**：图块属性 collision/solid → 值 2=墙；碰撞图层多选（land/wall…）
+2. **导入图片/动画像素缩放**（`img-scale-inject.js`，v8.10）：
+   - 目标宽×高双输入 + 保持宽高比联动 + 等比快捷（100%/50%/25%/12.5%）+ 精灵尺寸快捷（16/32/64/128）
+   - **百分比输入框（1~800 任意值）**，与宽高/快捷按钮双向联动，非等比时禁用
+   - 按钮全量接管（querySelectorAll + MutationObserver 持续监听 + 轮询兜底，抗重复注入）
+3. **顶部导入菜单**（`import-menu-inject.js`，v8.9.3）：
+   - 6 个导入按钮收纳为顶部导航栏「导入▾」下拉菜单（主页按钮左侧），不再遮挡地图编辑器墙显示开关
+
+### 文件清单
+
+- `editor-inject/merged-inject-v810.js` —— 部署合并版 inject.js（前 1294 行官方基线逐字节不变，MD5 `77391f15…`）
+- `delta/delta-img-scale-v810.zip` —— v8.10 增量包（nested `resources/app/editor/target.js` + `resources/app/inject/inject.js`），aka `https://aka.doubaocdn.com/s/ri7H4Zg6Oc`
+- `docs/README-tmx-v810.md` —— 完整版本记录与安装说明
+- `editor-inject/tests/` —— 三套回归测试（TMX 16 项 / img-scale 40 项 / import-menu 15 项，全 0 失败）
