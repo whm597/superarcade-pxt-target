@@ -3,173 +3,273 @@
         "approvedRepoLib": {
             "jwunderl/arcade-sprite-util": {
                 "preferred": true,
-                "tags": [ "Sprites" ]
+                "tags": [
+                    "Sprites"
+                ]
             },
             "microsoft/pxt-settings-blocks": {
                 "preferred": true,
-                "tags": [ "Gameplay" ]
+                "tags": [
+                    "Gameplay"
+                ]
             },
             "microsoft/arcade-tile-util": {
-                "tags": [ "World Building" ]
+                "tags": [
+                    "World Building"
+                ]
             },
             "riknoll/arcade-mini-menu": {
                 "preferred": true,
-                "tags": [ "Gameplay", "Game UI" ]
+                "tags": [
+                    "Gameplay",
+                    "Game UI"
+                ]
             },
             "jwunderl/pxt-color": {
-                "tags": [ "Graphics" ]
+                "tags": [
+                    "Graphics"
+                ]
             },
             "jwunderl/pxt-button-combos": {
-                "tags": [ "Controls" ]
+                "tags": [
+                    "Controls"
+                ]
             },
             "adafruit/circuit-playground-character-icons": {
-                "tags": [ "Sprites" ]
+                "tags": [
+                    "Sprites"
+                ]
             },
             "adafruit/pxt-seesaw": {
-                "tags": [ "Hardware" ]
+                "tags": [
+                    "Hardware"
+                ]
             },
             "jwunderl/pxt-status-bar": {
-                "tags": [ "Gameplay", "Game UI" ]
+                "tags": [
+                    "Gameplay",
+                    "Game UI"
+                ]
             },
             "jwunderl/pxt-scaling": {
-                "tags": [ "Sprites", "Graphics" ]
+                "tags": [
+                    "Sprites",
+                    "Graphics"
+                ]
             },
             "microsoft/arcade-sprite-data": {
                 "preferred": true,
-                "tags": [ "Sprites", "Gameplay" ],
-                "upgrades": [ "min:v0.0.6" ]
+                "tags": [
+                    "Sprites",
+                    "Gameplay"
+                ],
+                "upgrades": [
+                    "min:v0.0.6"
+                ]
             },
             "microsoft/arcade-grid": {},
             "microsoft/arcade-minimap": {},
             "microsoft/arcade-timers": {
-                "tags": [ "Gameplay" ]
+                "tags": [
+                    "Gameplay"
+                ]
             },
             "microsoft/arcade-text": {
-                "tags": [ "Game UI" ]
+                "tags": [
+                    "Game UI"
+                ]
             },
             "microsoft/pxt-tick-event": {},
             "microsoft/pxt-tilemaps": {
-                "upgrades": [ "min:v1.8.1" ]
+                "upgrades": [
+                    "min:v1.8.1"
+                ]
             },
             "microsoft/pxt-skillmap-sample": {},
             "microsoft/pxt-jacdac": {
-                "upgrades": [ "move:jacdac/pxt-jacdac" ],
+                "upgrades": [
+                    "move:jacdac/pxt-jacdac"
+                ],
                 "hidden": true
             },
             "jacdac/pxt-jacdac": {
-                "tags": [ "Hardware" ],
+                "tags": [
+                    "Hardware"
+                ],
                 "simx": {
                     "sha": "9a567f397293aa27a06eab91910838f62a100753",
                     "devUrl": "https://jacdac.github.io/jacdac-docs/tools/makecode-sim/"
                 }
             },
             "microsoft/arcade-storytelling": {
-                "tags": [ "Gameplay", "Game UI" ]
+                "tags": [
+                    "Gameplay",
+                    "Game UI"
+                ]
             },
             "microsoft/arcade-background-scroll": {
-                "tags": [ "World Building", "Graphics" ]
+                "tags": [
+                    "World Building",
+                    "Graphics"
+                ]
             },
             "microsoft/arcade-character-animations": {
                 "preferred": true,
-                "tags": [ "Sprites" ]
+                "tags": [
+                    "Sprites"
+                ]
             },
             "microsoft/arcade-piano-roll": {
                 "preferred": true,
-                "tags": [ "Music" ]
+                "tags": [
+                    "Music"
+                ]
             },
             "mr-coxall/turtle-logo": {
-                "tags": [ "Graphics" ]
+                "tags": [
+                    "Graphics"
+                ]
             },
             "aqeeaqee/pxt-raycasting": {
-                "tags": [ "World Building", "Graphics" ]
+                "tags": [
+                    "World Building",
+                    "Graphics"
+                ]
             },
             "joylabz/makeymakey-makecode-arcade-extension": {
-                "tags": [ "Controls", "Hardware" ]
+                "tags": [
+                    "Controls",
+                    "Hardware"
+                ]
             },
             "kohanmathers/makecodespritefx": {
-                "tags": [ "Sprites", "Graphics" ]
+                "tags": [
+                    "Sprites",
+                    "Graphics"
+                ]
             },
             "bladebaillio/image-mapping": {
-                "tags": [ "Graphics" ]
+                "tags": [
+                    "Graphics"
+                ]
             },
             "microsoft/arcade-carnival": {
-                "tags": [ "Gameplay" ]
+                "tags": [
+                    "Gameplay"
+                ]
             },
             "riknoll/arcade-tile-scanner": {
-                "tags": [ "Gameplay", "World Building" ]
+                "tags": [
+                    "Gameplay",
+                    "World Building"
+                ]
             },
             "riknoll/arcade-fancy-text": {
                 "preferred": true,
-                "tags": [ "Game UI", "Graphics" ]
+                "tags": [
+                    "Game UI",
+                    "Graphics"
+                ]
             },
             "code-ninjas-home-office/game-building-session-tutorials": {
-                "tutorial" : true
+                "tutorial": true
             },
             "code-ninjas-home-office/code-ninjas-tutorials": {
-                "tutorial" : true
+                "tutorial": true
             },
             "code-ninjas-home-office/arctic-code-quest": {
-                "tutorial" : true
+                "tutorial": true
             },
             "code-ninjas-home-office/game-building-session-tutorials-2024": {
-                "tutorial" : true
+                "tutorial": true
             },
             "code-ninjas-home-office/game-building-session-yb-ob": {
-                "tutorial" : true
+                "tutorial": true
             },
             "code-ninjas-home-office/scott-kelly-games": {
-                "tutorial" : true
+                "tutorial": true
             },
             "code-ninjas-home-office/camps": {
-                "tutorial" : true
+                "tutorial": true
             },
             "code-ninjas-home-office/belt-assessment-tutorials-2026": {
-                "tutorial" : true
+                "tutorial": true
             }
         },
         "builtinExtensionsLib": {
             "controller": {
                 "preferred": true,
-                "tags": [ "Controls" ]
+                "tags": [
+                    "Controls"
+                ]
             },
             "animation": {
                 "preferred": true,
-                "tags": [ "Sprites" ]
+                "tags": [
+                    "Sprites"
+                ]
             },
             "multiplayer": {
                 "preferred": true,
-                "tags": [ "Gameplay", "Controls" ]
+                "tags": [
+                    "Gameplay",
+                    "Controls"
+                ]
             },
             "sprite-scaling": {
                 "preferred": true,
-                "tags": [ "Sprites", "Graphics" ]
+                "tags": [
+                    "Sprites",
+                    "Graphics"
+                ]
             },
             "corgio": {
-                "tags": [ "Sprites", "Gameplay" ]
+                "tags": [
+                    "Sprites",
+                    "Gameplay"
+                ]
             },
             "darts": {
-                "tags": [ "Sprites" ]
+                "tags": [
+                    "Sprites"
+                ]
             },
             "edge-connector": {
-                "tags": [ "Hardware" ]
+                "tags": [
+                    "Hardware"
+                ]
             },
             "light": {
-                "tags": [ "Hardware" ]
+                "tags": [
+                    "Hardware"
+                ]
             },
             "radio-broadcast": {
-                "tags": [ "Controls", "Hardware" ]
+                "tags": [
+                    "Controls",
+                    "Hardware"
+                ]
             },
             "servo": {
-                "tags": [ "Hardware" ]
+                "tags": [
+                    "Hardware"
+                ]
             },
             "sevenseg": {
-                "tags": [ "Game UI", "Graphics" ]
+                "tags": [
+                    "Game UI",
+                    "Graphics"
+                ]
             },
             "feather": {
-                "tags": [ "Hardware" ]
+                "tags": [
+                    "Hardware"
+                ]
             },
             "browser-events": {
-                "tags": [ "Controls" ]
+                "tags": [
+                    "Controls"
+                ]
             }
         },
         "upgrades": {
@@ -251,6 +351,13 @@
         ]
     },
     "hardwareOptions": [
+        {
+            "name": "SuperArcade F412",
+            "description": "SuperArcade 掌机 (STM32F412RGT6, 1MB Flash)",
+            "imageUrl": "/static/hardmeowbit.png",
+            "url": "",
+            "variant": "hw---stm32f412"
+        },
         {
             "name": "Meowbit",
             "description": "A retro game console for STEM education from Kittenbot team",
