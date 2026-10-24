@@ -16,10 +16,10 @@ SuperArcade 掌机运行定制版 MakeCode Arcade 编辑器（Electron 桌面版
 
 | 文件 | 说明 |
 |---|---|
-| `target.js` | **8.6MB 完整工作副本**（MD5 见 `target.js.md5`）。含全部内嵌定制 C++ 与 JS。**本仓库一号资产** |
-| `target.js.md5` | target.js 的 MD5 校验值（`58ca5172af9bd72a14e3bcd3da5fc21f`），用于核对版本是否分叉 |
+| `target.js` | **8.7MB 完整工作副本**（MD5 见 `target.js.md5`）。含全部内嵌定制 C++ 与 JS。**本仓库一号资产**。当前为 BGM 波形带限修复 v32.1 版（含 v29 音序器锚定、v30 TIM5 冲突修复、v31 声道扩容、v32.1 波形边沿平滑） |
+| `target.js.md5` | target.js 的 MD5 校验值（`2f719006a001af645a53029c4f213bc7`），用于核对版本是否分叉 |
 | `extracted-sources/RAFFS.cpp` | 从 target.js 提取出的 RAFFS 存档实现（C++ 独立源码，v11.3 修复版，MD5 `944c03f9e7d879ca06ffe6ad6a99b896`），便于直接阅读/改代码 |
-| `delta-save-hwspi-48k-v113.zip` | **最新增量包**。内含 `resources/app/editor/target.js`，是覆盖编辑器时的标准交付物（与仓库内 target.js 逐字节一致） |
+| `delta-bgm-v32.1-bandlimit.zip` | **最新增量包**（v32.1 BGM 波形带限修复）。内含 `resources/app/editor/target.js`，是覆盖编辑器时的标准交付物（与仓库内 target.js 逐字节一致） |
 | `tmx-import/` | **Tiled 瓦片地图导入功能（v8.5 验收闭环）**：注入模块源码 + 版本链备份 + 测试 + 增量包 + README（详见该目录 README.md） |
 
 ## 覆盖编辑器（恢复注入）
@@ -27,10 +27,21 @@ SuperArcade 掌机运行定制版 MakeCode Arcade 编辑器（Electron 桌面版
 桌面版编辑器安装目录结构：`.../resources/app/editor/target.js`
 
 1. 备份编辑器现有的 `target.js`（防止回退）
-2. 解压 `delta-save-hwspi-48k-v113.zip`，把里面的 `resources/app/editor/target.js` 复制覆盖到编辑器同路径
-3. 重启编辑器 → 云端编译即使用本 target 的 libs（含 RAFFS.cpp v11.3 修复）
+2. 解压 `delta-bgm-v32.1-bandlimit.zip`，把里面的 `resources/app/editor/target.js` 复制覆盖到编辑器同路径
+3. 重启编辑器 → 云端编译即使用本 target 的 libs（含 RAFFS.cpp v11.3 修复 + BGM 波形带限 v32.1）
 
 > 注意：编辑器加载后运行的是 JS 运行时；云编译时由内嵌 pxtTargetBundle 提供 C++ 源码（含 RAFFS.cpp）到 codal 构建。**云编译不从 GitHub 的 codal-stm32f412-arcade 仓库取 RAFFS.cpp**（该仓库只有 codal 核心 inc/ld/src/utils）。
+
+## BGM 硬件听感修复版本历史（2026-10 验收闭环）
+
+| 版本 | 内容 |
+|---|---|
+| v29 | 音序器绝对时间锚定（nextTickTime + control.millis()） |
+| v30 | **TIM5 冲突修复**：`DEF_TIMERS 0x15120000 → 0x12000000`（system_timer 只占 TIM2，TIM5 完整让给音频 PWM）。修复硬件 BGM 全局 4:3 匀速偏快（10s→7s、26s→17s 根因） |
+| v31 | **声道扩容**：`MAX_SOUNDS 8 → 15`（7 处包变体统一）。修复齐奏 >8 音符时驱逐截断最先开始的音符（抢断/被干扰） |
+| **v32.1** | **波形带限（边沿平滑）**：squareWaveTone / sawtoothTone / tunedNoiseTone / cycleNoiseTone 的硬切 ±0x7fff 边沿加 64 相位点线性斜坡，压制 44.1kHz 采样混叠回中频的杂散（"小猫叫"等谐波丰富音色）。v32 曾因 tunedNoiseTone 内 `static uint32_t x`（RNG）与平滑变量 `int x` 同作用域冲突导致云编译失败，已改名 `px` 修复（v32.1） |
+
+> BGM 链路结论：模拟器→硬件时长、节拍、齐奏抢断均已在 v30/v31 验收；v32.1 波形平滑 CPU 增量 <0.5%（可忽略），不影响 4 首已验收 BGM 的时长/节拍/音色。
 
 ## 存档系统版本历史（防混淆）
 
