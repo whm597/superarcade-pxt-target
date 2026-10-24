@@ -37,8 +37,8 @@ SuperArcade 掌机运行定制版 MakeCode Arcade 编辑器（Electron 桌面版
 | 版本 | 内容 |
 |---|---|
 | v29 | 音序器绝对时间锚定（nextTickTime + control.millis()） |
-| v30 | **TIM5 冲突修复**：`DEF_TIMERS 0x15120000 → 0x12000000`（system_timer 只占 TIM2，TIM5 完整让给音频 PWM）。修复硬件 BGM 全局 4:3 匀速偏快（10s→7s、26s→17s 根因） |
-| v31 | **声道扩容**：`MAX_SOUNDS 8 → 15`（7 处包变体统一）。修复齐奏 >8 音符时驱逐截断最先开始的音符（抢断/被干扰） |
+| v30 | **TIM5 冲突修复（播放偏快根因）**：`DEF_TIMERS 0x15120000 → 0x12000000`。根因证据：官方 codal-stm32 `platform_init()` 无条件写 `TIM5->PSC=57`（固件 0x801aa00 `movs r1,#0x39; str r1,[r3,#0x28]`，r3=0x40000C00=TIM5），而 system_timer 按原 `DEF_TIMERS`（TIM5+TIM2）优先占用 TIM5 → 定时器时钟 84M/(57+1)=1.448MHz，快 1.448× → 依赖 system_timer 的 BGM 音序整体按 4:3 匀速压缩（10s 暂停程序实测 ~7s；第 4 首 26s→17s；录音主节拍 400ms→300ms）。修复后 TIM5 完整让给音频 PWM（JACK_SND/ZPWM）；allocateTimer 全固件仅 system_timer 一处调用，无分配风险 |
+| v31 | **声道扩容（齐奏不合拍/抢断根因）**：`MAX_SOUNDS 8 → 15`（7 处包变体统一）。根因证据：`WSynthesizer::updateQueues()` 通道满时驱逐最先开始的音符并截断其音尾 → 齐奏 >8 音符时先发音符被"偷走"、听感为合拍被干扰（录音 9 处 1-3kHz 突发 spike 全部对齐音符 onset）。官方 STATIC_ASSERT 允许到 15；OUTPUT_BITS=12，15×127 混音不溢 int16 |
 | **v32.1** | **波形带限（边沿平滑）**：squareWaveTone / sawtoothTone / tunedNoiseTone / cycleNoiseTone 的硬切 ±0x7fff 边沿加 64 相位点线性斜坡，压制 44.1kHz 采样混叠回中频的杂散（"小猫叫"等谐波丰富音色）。v32 曾因 tunedNoiseTone 内 `static uint32_t x`（RNG）与平滑变量 `int x` 同作用域冲突导致云编译失败，已改名 `px` 修复（v32.1） |
 
 > BGM 链路结论：模拟器→硬件时长、节拍、齐奏抢断均已在 v30/v31 验收；v32.1 波形平滑 CPU 增量 <0.5%（可忽略），不影响 4 首已验收 BGM 的时长/节拍/音色。
